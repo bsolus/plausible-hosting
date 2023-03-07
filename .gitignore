@@ -1,0 +1,4 @@
+geoip/geoip.conf
+.env
+plausible-conf.env
+backups/daily/

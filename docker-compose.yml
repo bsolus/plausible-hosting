@@ -10,8 +10,17 @@ services:
     restart: always
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./backups:${SCRIPT_BACKUP_POSTGRES_DIR}
+    ports:
+      - 5432:5432
     environment:
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SCRIPT_BACKUP_POSTGRES_DB_HOST=${SCRIPT_BACKUP_POSTGRES_DB_HOST}
+      - SCRIPT_BACKUP_POSTGRES_DB_PORT=${SCRIPT_BACKUP_POSTGRES_DB_PORT}
+      - SCRIPT_BACKUP_POSTGRES_DB_NAME=${SCRIPT_BACKUP_POSTGRES_DB_NAME}
+      - SCRIPT_BACKUP_POSTGRES_DB_USERNAME=${SCRIPT_BACKUP_POSTGRES_DB_USERNAME}
+      - SCRIPT_BACKUP_POSTGRES_DIR=${SCRIPT_BACKUP_POSTGRES_DIR}/daily/postgres
+
 
   plausible_events_db:
     image: clickhouse/clickhouse-server:22.6-alpine
@@ -20,15 +29,24 @@ services:
       - event-data:/var/lib/clickhouse
       - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+      - ./clickhouse/backup_disk.xml:/etc/clickhouse-server/config.d/backup_disk.xml:ro
+      - ./backups:${SCRIPT_BACKUP_CLICKHOUSE_DIR}
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
+    ports:
+      - 9000:9000
+    environment:
+      - SCRIPT_BACKUP_CLICKHOUSE_DB_NAME=${SCRIPT_BACKUP_CLICKHOUSE_DB_NAME}
+      - SCRIPT_BACKUP_CLICKHOUSE_DIR=${SCRIPT_BACKUP_CLICKHOUSE_DIR}/daily/clickhouse
 
   plausible:
-    image: plausible/analytics:latest
+    build:
+      context: ../analytics/
+      dockerfile: Dockerfile
     restart: always
-    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh db init-admin && /entrypoint.sh run"
     depends_on:
       - plausible_db
       - plausible_events_db

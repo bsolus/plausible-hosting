@@ -1,0 +1,12 @@
+#!/bin/bash
+
+[ -d $SCRIPT_BACKUP_CLICKHOUSE_DIR ] || mkdir $SCRIPT_BACKUP_CLICKHOUSE_DIR
+
+chmod -R 777 $SCRIPT_BACKUP_CLICKHOUSE_DIR
+
+BACKUP_FILE="$SCRIPT_BACKUP_CLICKHOUSE_DB_NAME-$(date +"%Y_%m_%d_%H_%M_%S").sql.zip"
+
+clickhouse-client -q "BACKUP DATABASE $SCRIPT_BACKUP_CLICKHOUSE_DB_NAME TO Disk('backups', '$BACKUP_FILE')"
+
+
+find $SCRIPT_BACKUP_CLICKHOUSE_DIR -type f -name "$SCRIPT_BACKUP_CLICKHOUSE_DB_NAME-*" -mtime +2 -exec rm {} \;

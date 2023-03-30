@@ -14,3 +14,12 @@ something could be improved.
 ### Upgrade guides
 
 - [Upgrading `plausible_db` (PostgreSQL)](upgrade/postgres.md)
+
+
+### How to backup
+
+#### postgres
+
+```
+psql -U postgres plausible_db < plausible_db-2023_03_24_03_00_11.sql 
+```

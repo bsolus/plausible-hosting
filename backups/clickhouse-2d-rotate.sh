@@ -1,12 +1,20 @@
 #!/bin/bash
+echo "Backing up ClickHouse ..."
 
-[ -d $SCRIPT_BACKUP_CLICKHOUSE_DIR ] || mkdir $SCRIPT_BACKUP_CLICKHOUSE_DIR
+backup_name=$(date +"%Y_%m_%d_%H_%M_%S")-clickhouse
+script_backup_clickhouse_dir="./backups/daily/clickhouse"
+temp_path="${script_backup_clickhouse_dir}/${backup_name}"
+tar_path="${temp_path}.tar.gz"
 
-chmod -R 777 $SCRIPT_BACKUP_CLICKHOUSE_DIR
+echo "Creating backup ${backup_name} ..."
+docker compose run --rm plausible_events_db_backups create "${backup_name}"
 
-BACKUP_FILE="$SCRIPT_BACKUP_CLICKHOUSE_DB_NAME-$(date +"%Y_%m_%d_%H_%M_%S").sql.zip"
+echo "Compressing ${tar_path}"
+tar -zcf "${tar_path}" -C "${temp_path}" .
 
-clickhouse-client -q "BACKUP DATABASE $SCRIPT_BACKUP_CLICKHOUSE_DB_NAME TO Disk('backups', '$BACKUP_FILE')"
+echo "Cleaning up ..."
+rm -rf "${temp_path}"
 
+echo "Done"
 
-find $SCRIPT_BACKUP_CLICKHOUSE_DIR -type f -name "$SCRIPT_BACKUP_CLICKHOUSE_DB_NAME-*" -mtime +2 -exec rm {} \;
+find $script_backup_clickhouse_dir -type f -name "*.tar.gz" -mtime +2 -exec rm {} \;
